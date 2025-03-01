@@ -1,24 +1,13 @@
 from flask import Flask, render_template, jsonify
 import requests
+import textwrap
+from deep_translator import GoogleTranslator  # 🔹 deep_translator 사용
 
 # 🔹 Flask 앱 생성
 app = Flask(__name__)
 
 # 🔹 API 키
 API_KEY = "b826df4bce2040e3bd600d38a8e063d5"
-
-def filter_ai_news(articles):
-    """
-    뉴스 기사에서 AI 관련 키워드가 포함된 기사만 필터링
-    """
-    ai_keywords = ["artificial intelligence", "AI", "machine learning", "deep learning", "neural network", "OpenAI", "ChatGPT"]
-    
-    filtered_articles = [
-        article for article in articles
-        if any(keyword.lower() in article["title"].lower() for keyword in ai_keywords)
-    ]
-    
-    return filtered_articles
 
 def fetch_news(query, sort_by):
     """
@@ -48,15 +37,52 @@ def merge_news(latest_news, popular_news):
 
     return combined_articles
 
+def simple_summarize(text, max_lines=3, max_chars=200):
+    """
+    텍스트를 간단히 요약 (textwrap 사용, nltk 없이 처리)
+    - max_lines: 최대 문장 수
+    - max_chars: 최대 문자 수
+    """
+    if not text or len(text.split()) < 10:  # 본문이 너무 짧으면 요약하지 않음
+        return "기사 내용이 부족하여 요약할 수 없습니다."
+
+    # 문장을 최대 문자 수만큼 줄이기
+    wrapped_text = textwrap.fill(text, width=max_chars)
+
+    # 최대 문장 수만큼 나누기
+    summarized_text = "\n".join(wrapped_text.split("\n")[:max_lines])
+
+    return summarized_text
+
+def translate_to_korean(text):
+    """
+    영어 텍스트를 한글로 번역 (deep_translator 사용)
+    """
+    try:
+        return GoogleTranslator(source="en", target="ko").translate(text)
+    except Exception as e:
+        print(f"번역 오류: {e}")
+        return "번역할 수 없습니다."
+
 @app.route("/")
 def home():
-    query = "Open Ai"
+    """
+    웹사이트에서 'OpenAI' 관련 뉴스 리스트를 보여주는 페이지
+    """
+    query = "OpenAI"  # 🔹 검색어를 'OpenAI'로 변경
     latest_news = fetch_news(query, "publishedAt")
     popular_news = fetch_news(query, "popularity")
 
     combined_news = merge_news(latest_news, popular_news)
-    ai_filtered_news = filter_ai_news(combined_news)  # ✅ AI 관련 기사만 필터링
+    ai_filtered_news = combined_news[:5]  # 상위 5개 뉴스만 표시
 
-    return render_template("index.html", articles=ai_filtered_news[:5])
+    # 뉴스 본문 요약 + 한글 번역 추가
+    for article in ai_filtered_news:
+        summary = simple_summarize(article.get("description", ""))  # 요약 추가
+        article["summary"] = summary
+        article["summary_ko"] = translate_to_korean(summary)  # 🔹 한글 번역 추가
+
+    return render_template("index.html", articles=ai_filtered_news)
+
 if __name__ == "__main__":
     app.run(debug=True)  # 🔥 Flask 웹 서버 실행

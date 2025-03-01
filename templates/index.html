@@ -21,6 +21,8 @@
         }
         .news-card h2 { font-size: 18px; margin: 10px 0; color: #002266; }
         .news-card p { font-size: 14px; color: #555; }
+        .news-card .summary { font-size: 13px; color: #222; font-weight: bold; background: #eef; padding: 10px; border-radius: 5px; }
+        .news-card .summary-ko { font-size: 14px; color: #007700; font-weight: bold; background: #dff; padding: 10px; border-radius: 5px; }
         .news-card a { text-decoration: none; color: #0066ff; font-weight: bold; }
     </style>
 </head>
@@ -32,6 +34,8 @@
             <img src="{{ article['urlToImage'] if article['urlToImage'] else 'https://via.placeholder.com/300x200.png?text=No+Image' }}" alt="News Image">
             <h2><a href="{{ article['url'] }}" target="_blank">{{ article['title'] }}</a></h2>
             <p>📰 출처: {{ article['source']['name'] }}</p>
+            <p class="summary">📌 영어 요약: {{ article['summary'] }}</p>
+            <p class="summary-ko">📌 한글 요약: {{ article['summary_ko'] }}</p>
         </div>
         {% endfor %}
     </div>
